@@ -10,7 +10,6 @@ import { connectToDatabase } from "../connectToDatabase.js";
 
 export const create = async (req, res) => {
   try {
-    await connectToDatabase();
     // console.log("req.file = ", req.file);
     const { name } = req.body;
     // console.log('req.body = ', req.body);
@@ -56,7 +55,6 @@ export const create = async (req, res) => {
 
 export const list = async (req, res) => {
   try {
-    await connectToDatabase();
     const dataFromMongodb = await locationModel
       .find({})
       .select(["name", "icon"])

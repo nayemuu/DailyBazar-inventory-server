@@ -1,12 +1,11 @@
 // import dotenv from 'dotenv';
 // dotenv.config();
-import fs from "fs";
-import slugify from "slugify";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
-import { imageUploadOnDB } from "../utils/image.js";
-import { locationModel } from "../models/locationModel.js";
-import { replaceMongoIdInArray } from "../utils/mongoDB.js";
-import { connectToDatabase } from "../connectToDatabase.js";
+import fs from 'fs';
+import slugify from 'slugify';
+import { uploadOnCloudinary } from '../utils/cloudinary.js';
+import { imageUploadOnDB } from '../utils/image.js';
+import { locationModel } from '../models/locationModel.js';
+import { replaceMongoIdInArray } from '../utils/mongoDB.js';
 
 export const create = async (req, res) => {
   try {
@@ -15,19 +14,19 @@ export const create = async (req, res) => {
     // console.log('req.body = ', req.body);
 
     if (!name && !name?.trim().length) {
-      return res.status(400).json({ message: "name is required" });
+      return res.status(400).json({ message: 'name is required' });
     }
 
-    const isUserExists = await locationModel.findOne({
+    const isLocationExists = await locationModel.findOne({
       slug: slugify(name.trim()),
     });
-    if (isUserExists) {
+    if (isLocationExists) {
       return res
         .status(400)
-        .json({ message: "location with this name already exist" });
+        .json({ message: 'location with this name already exist' });
     }
 
-    res.status(201).json({ message: "Location created successfully" });
+    res.status(201).json({ message: 'Location created successfully' });
 
     if (req?.file?.path) {
       const logo = await uploadOnCloudinary(req.file.path);
@@ -46,7 +45,7 @@ export const create = async (req, res) => {
     if (req?.file?.path) {
       fs.unlink(req.file.path, (error) => {
         if (error) {
-          console.log("uploadOnCloudinary, fsmodule error = ", error);
+          console.log('uploadOnCloudinary, fsmodule error = ', error);
         }
       });
     }
@@ -57,7 +56,7 @@ export const list = async (req, res) => {
   try {
     const dataFromMongodb = await locationModel
       .find({})
-      .select(["name", "icon"])
+      .select(['name', 'icon'])
       .lean();
 
     res.status(200).json(replaceMongoIdInArray(dataFromMongodb));

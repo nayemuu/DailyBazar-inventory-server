@@ -16,6 +16,7 @@ const locationSchema = new Schema({
   },
   icon: {
     type: String,
+    default: null,
   },
   slug: {
     type: String,

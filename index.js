@@ -21,7 +21,7 @@ app.use(morgan('dev'));
 app.use(express.json());
 
 app.get('/', (req, res) => {
-  res.json({ root: __dirname });
+  res.json({ message: 'welcome to DailyBazar' });
 });
 
 // router middleware

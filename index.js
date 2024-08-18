@@ -6,19 +6,25 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-import { connectToDatabase } from './connectToDatabase.js';
 import authRoutes from './routes/authRoutes.js';
 import locationRoutes from './routes/locationRoutes.js';
+import {
+  checkDatabaseConnection,
+  connectToDatabase,
+} from './utils/database-utils.js';
 
 dotenv.config();
 const app = express();
 const port = process.env.PORT;
+
+//app.use() এর মধ্যে কোন middleware pass করলে, যেকোনো endpoint এ hit করলে উক্ত middleware টি call হবে
 
 // middlewares
 app.use(express.static(`${__dirname}/public/`));
 app.use(cors());
 app.use(morgan('dev'));
 app.use(express.json());
+app.use(checkDatabaseConnection);
 
 app.get('/', (req, res) => {
   res.json({ message: 'welcome to DailyBazar' });
@@ -28,17 +34,19 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/location', locationRoutes);
 
-// error handling middleware
+// Error handling middleware
 function errorHandler(err, req, res, next) {
-  console.log('error = ', err);
+  console.error('Error:', err);
+
   if (res.headersSent) {
-    next('error - headers already sent');
-  } else if (err?.message) {
-    res.status(500).send({ message: err.message });
+    return next(err);
+  }
+
+  if (err?.status) {
+    res.status(err.status).json({ message: err.message });
   } else {
-    res.status(500).send({
-      message:
-        'there was an error, express did not give any message for this error',
+    res.status(500).json({
+      message: err.message || 'An unexpected error occurred.',
     });
   }
 }

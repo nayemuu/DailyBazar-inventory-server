@@ -68,13 +68,19 @@ export const list = async (req, res) => {
   }
 
   // Build the query
-  const keywordRegex = new RegExp(keyword, "i");
-  const query = {
-    $or: [
-      { name: { $regex: keywordRegex } },
-      { _id: { $regex: keywordRegex } },
-    ],
-  };
+
+  let query = { name: { $regex: keywordRegex } };
+
+  // let query = {};
+  // if (keyword) {
+  //   const keywordRegex = new RegExp(keyword, "i");
+  //   query = {
+  //     $or: [
+  //       { name: { $regex: keywordRegex } },
+  //       { _id: { $regex: keywordRegex } },
+  //     ],
+  //   };
+  // }
 
   try {
     // Get the total count of documents
@@ -95,6 +101,7 @@ export const list = async (req, res) => {
       count,
     });
   } catch (err) {
+    console.log("err = ", err);
     if (err?.messag) {
       res.status(500).json(err.message);
     } else {

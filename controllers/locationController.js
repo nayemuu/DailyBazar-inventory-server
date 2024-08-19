@@ -68,7 +68,7 @@ export const list = async (req, res) => {
   }
 
   // Build the query
-
+  const keywordRegex = new RegExp(keyword, "i");
   let query = { name: { $regex: keywordRegex } };
 
   // let query = {};

@@ -55,7 +55,9 @@ export const create = async (req, res) => {
 export const list = async (req, res) => {
   // console.log("req.query = ", req.query);
 
-  let { limit = 10, offset = 0 } = req.query; // Default to 10 items per page and 0 items skipped
+  let { limit = 10, offset = 0, keyword = "" } = req.query; // Default to 10 items per page and 0 items skipped
+
+  const keywordRegex = new RegExp(keyword, "i");
 
   // Convert limit and offset to numbers
   limit = parseInt(limit);
@@ -68,11 +70,13 @@ export const list = async (req, res) => {
 
   try {
     // Get the total count of documents
-    const count = await locationModel.countDocuments({});
+    const count = await locationModel.countDocuments({
+      name: { $regex: keywordRegex },
+    });
 
     // Get the paginated data
     const dataFromMongodb = await locationModel
-      .find({})
+      .find({ name: { $regex: keywordRegex } })
       .select(["name", "icon"])
       .limit(limit)
       .skip(offset)

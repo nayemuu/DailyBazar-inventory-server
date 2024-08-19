@@ -57,26 +57,32 @@ export const list = async (req, res) => {
 
   let { limit = 10, offset = 0, keyword = "" } = req.query; // Default to 10 items per page and 0 items skipped
 
-  const keywordRegex = new RegExp(keyword, "i");
-
   // Convert limit and offset to numbers
   limit = parseInt(limit);
   offset = parseInt(offset);
+  keyword = keyword.trim(); // Trim keyword to remove extra spaces
 
   // Validate limit and offset
   if (isNaN(limit) || isNaN(offset) || limit < 0 || offset < 0) {
     return res.status(400).json({ error: "Invalid limit or offset value" });
   }
 
+  // Build the query
+  const keywordRegex = new RegExp(keyword, "i");
+  const query = {
+    $or: [
+      { name: { $regex: keywordRegex } },
+      { _id: { $regex: keywordRegex } },
+    ],
+  };
+
   try {
     // Get the total count of documents
-    const count = await locationModel.countDocuments({
-      name: { $regex: keywordRegex },
-    });
+    const count = await locationModel.countDocuments(query);
 
     // Get the paginated data
     const dataFromMongodb = await locationModel
-      .find({ name: { $regex: keywordRegex } })
+      .find(query)
       .select(["name", "icon"])
       .limit(limit)
       .skip(offset)
@@ -89,7 +95,12 @@ export const list = async (req, res) => {
       count,
     });
   } catch (err) {
-    console.log(err);
-    return res.status(500).json(err.message);
+    if (err?.messag) {
+      res.status(500).json(err.message);
+    } else {
+      res
+        .status(500)
+        .json({ error: "An error occurred while processing your request" });
+    }
   }
 };

@@ -68,8 +68,8 @@ export const list = async (req, res) => {
   }
 
   // Build the query
-  const keywordRegex = new RegExp(keyword, "i");
-  let query = { name: { $regex: keywordRegex } };
+  // const keywordRegex = new RegExp(keyword, "i");
+  // let query = { name: { $regex: keywordRegex } };
 
   // let query = {};
   // if (keyword) {
@@ -81,6 +81,19 @@ export const list = async (req, res) => {
   //     ],
   //   };
   // }
+
+  // Build the query
+  let query = {};
+  if (keyword) {
+    if (/^[0-9a-fA-F]{24}$/.test(keyword)) {
+      // If keyword is a valid ObjectId, search by _id
+      query._id = keyword;
+    } else {
+      // Otherwise, search by name with regex
+      const keywordRegex = new RegExp(keyword, "i");
+      query.$or = [{ name: { $regex: keywordRegex } }];
+    }
+  }
 
   try {
     // Get the total count of documents

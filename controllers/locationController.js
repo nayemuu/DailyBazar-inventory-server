@@ -55,7 +55,8 @@ export const create = async (req, res) => {
 export const list = async (req, res) => {
   // console.log("req.query = ", req.query);
 
-  let { limit = 10, offset = 0, keyword = "" } = req.query; // Default to 10 items per page and 0 items skipped
+  // Destructure query parameters with default values
+  let { limit = 10, offset = 0, keyword = "" } = req.query;
 
   // Convert limit and offset to numbers
   limit = parseInt(limit);
@@ -67,22 +68,6 @@ export const list = async (req, res) => {
     return res.status(400).json({ error: "Invalid limit or offset value" });
   }
 
-  // Build the query
-  // const keywordRegex = new RegExp(keyword, "i");
-  // let query = { name: { $regex: keywordRegex } };
-
-  // let query = {};
-  // if (keyword) {
-  //   const keywordRegex = new RegExp(keyword, "i");
-  //   query = {
-  //     $or: [
-  //       { name: { $regex: keywordRegex } },
-  //       { _id: { $regex: keywordRegex } },
-  //     ],
-  //   };
-  // }
-
-  // Build the query
   let query = {};
   if (keyword) {
     if (/^[0-9a-fA-F]{24}$/.test(keyword)) {
@@ -99,10 +84,11 @@ export const list = async (req, res) => {
     // Get the total count of documents
     const count = await locationModel.countDocuments(query);
 
-    // Get the paginated data
+    // Get the paginated and sorted data
     const dataFromMongodb = await locationModel
       .find(query)
       .select(["name", "icon"])
+      .sort({ createdAt: -1 }) // Sort by createdAt in descending order
       .limit(limit)
       .skip(offset)
       .lean();

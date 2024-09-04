@@ -68,14 +68,17 @@ export const list = async (req, res) => {
     return res.status(400).json({ error: "Invalid limit or offset value" });
   }
 
+  // Initialize query object
   let query = {};
+
   if (keyword) {
+    const keywordRegex = new RegExp(keyword, "i");
+
     if (/^[0-9a-fA-F]{24}$/.test(keyword)) {
-      // If keyword is a valid ObjectId, search by _id
-      query._id = keyword;
+      // If keyword is a valid ObjectId, search by _id or name
+      query.$or = [{ _id: keyword }, { name: { $regex: keywordRegex } }];
     } else {
-      // Otherwise, search by name with regex
-      const keywordRegex = new RegExp(keyword, "i");
+      // Otherwise, search only by name using regex
       query.$or = [{ name: { $regex: keywordRegex } }];
     }
   }

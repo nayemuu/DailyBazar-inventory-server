@@ -6,6 +6,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { imageUploadOnDB } from "../utils/image.js";
 import { locationModel } from "../models/locationModel.js";
 import { replaceMongoIdInArray } from "../utils/mongoDB.js";
+import { imageModel } from "../models/imageModel.js";
 
 export const create = async (req, res) => {
   try {
@@ -111,5 +112,39 @@ export const list = async (req, res) => {
         .status(500)
         .json({ error: "An error occurred while processing your request" });
     }
+  }
+};
+
+export const remove = async (req, res) => {
+  try {
+    console.log("req.params.id = ", req.params.id);
+    if (/^[0-9a-fA-F]{24}$/.test(req.params.id)) {
+      const deletedData = await locationModel.findByIdAndDelete(req.params.id);
+
+      console.log("deletedData = ", deletedData);
+      if (deletedData) {
+        // imageModel.findByIdAndDelete(req.params.id);
+        // deleteFromCloudinary(deletedData.thumbnail);
+        // deleteFromCloudinary(deletedData.logo);
+
+        res.status(200).json({ message: "deleted successfully" });
+
+        if (deletedData.icon) {
+          let imageDetails = await imageModel.findOneAndDelete({
+            secure_url: deletedData.icon,
+          });
+          if (imageDetails.public_id) {
+            deleteFromCloudinary(imageDetails.public_id);
+          }
+        }
+      } else {
+        res.status(400).json({ message: "Provide vaild id" });
+      }
+    } else {
+      res.status(400).json({ message: "Provide vaild id" });
+    }
+  } catch (err) {
+    console.log(err);
+    return res.status(400).json(err.message);
   }
 };

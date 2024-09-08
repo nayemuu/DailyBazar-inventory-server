@@ -14,7 +14,7 @@ export const uploadOnCloudinary = async (localFilePath) => {
   return response;
 };
 
-const deleteFromCloudinary = async (public_id) => {
+export const deleteFromCloudinary = async (public_id) => {
   try {
     if (!public_id) {
       throw new Error("Provide Valid public_id");

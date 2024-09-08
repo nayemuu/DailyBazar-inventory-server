@@ -3,10 +3,9 @@
 import fs from "fs";
 import slugify from "slugify";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
-import { imageUploadOnDB } from "../utils/image.js";
+import { deleteImage, imageUploadOnDB } from "../utils/image.js";
 import { locationModel } from "../models/locationModel.js";
 import { replaceMongoIdInArray } from "../utils/mongoDB.js";
-import { imageModel } from "../models/imageModel.js";
 
 export const create = async (req, res) => {
   try {
@@ -130,12 +129,7 @@ export const remove = async (req, res) => {
         res.status(200).json({ message: "deleted successfully" });
 
         if (deletedData.icon) {
-          let imageDetails = await imageModel.findOneAndDelete({
-            secure_url: deletedData.icon,
-          });
-          if (imageDetails.public_id) {
-            deleteFromCloudinary(imageDetails.public_id);
-          }
+          deleteImage(deletedData.icon);
         }
       } else {
         res.status(400).json({ message: "Provide vaild id" });

@@ -74,13 +74,20 @@ export const list = async (req, res) => {
   if (keyword) {
     const keywordRegex = new RegExp(keyword, "i");
 
+    query.$or = [{ name: { $regex: keywordRegex } }];
+
+    // Check if keyword is a valid ObjectId
     if (/^[0-9a-fA-F]{24}$/.test(keyword)) {
-      // If keyword is a valid ObjectId, search by _id or name
-      query.$or = [{ _id: keyword }, { name: { $regex: keywordRegex } }];
-    } else {
-      // Otherwise, search only by name using regex
-      query.$or = [{ name: { $regex: keywordRegex } }];
+      query.$or.push({ _id: keyword });
     }
+
+    // if (/^[0-9a-fA-F]{24}$/.test(keyword)) {
+    //   // If keyword is a valid ObjectId, search by _id or name
+    //   query.$or = [{ _id: keyword }, { name: { $regex: keywordRegex } }];
+    // } else {
+    //   // Otherwise, search only by name using regex
+    //   query.$or = [{ name: { $regex: keywordRegex } }];
+    // }
   }
 
   try {
@@ -107,40 +114,38 @@ export const list = async (req, res) => {
     if (err?.messag) {
       res.status(500).json(error.message);
     } else {
-      res
-        .status(500)
-        .json({ error: "An error occurred while processing your request" });
+      console.error("Error listing locations:", error);
+      return res.status(500).json({ message: "Server error occurred" });
     }
   }
 };
 
 export const remove = async (req, res) => {
   try {
-    // console.log("req.params.id = ", req.params.id);
-    if (/^[0-9a-fA-F]{24}$/.test(req.params.id)) {
-      const deletedData = await locationModel.findByIdAndDelete(req.params.id);
+    const locationId = req.params.id;
 
-      // console.log("deletedData = ", deletedData);
-      if (deletedData) {
-        res.status(200).json({ message: "deleted successfully" });
-
-        if (deletedData.icon) {
-          deleteImage(deletedData.icon);
-        }
-      } else {
-        res.status(400).json({ message: "Provide vaild id" });
-      }
-    } else {
-      res.status(400).json({ message: "Provide vaild id" });
+    // Validate location ID
+    if (!/^[0-9a-fA-F]{24}$/.test(locationId)) {
+      return res.status(400).json({ message: "Invalid location ID" });
     }
+
+    // Find and delete the location by ID
+    const deletedLocation = await locationModel.findByIdAndDelete(locationId);
+
+    if (!deletedLocation) {
+      return res
+        .status(400)
+        .json({ message: "No location found with the provided ID" });
+    }
+
+    // If the location has an associated icon, delete it
+    if (deletedLocation.icon) {
+      deleteImage(deletedLocation.icon);
+    }
+
+    return res.status(200).json({ message: "Location deleted successfully" });
   } catch (error) {
-    console.log("error = ", error);
-    if (err?.messag) {
-      res.status(500).json(error.message);
-    } else {
-      res
-        .status(500)
-        .json({ error: "An error occurred while processing your request" });
-    }
+    console.error("Error deleting location:", error);
+    return res.status(500).json({ message: "Server error occurred" });
   }
 };

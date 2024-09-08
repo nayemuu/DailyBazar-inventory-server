@@ -1,10 +1,12 @@
 import { imageModel } from "../models/imageModel.js";
-import { deleteFromCloudinary } from "./cloudinary.js";
+import { deleteFromCloudinary, uploadOnCloudinary } from "./cloudinary.js";
 
-export const imageUploadOnDB = async (imageCredentials) => {
-  // console.log("imageCredentials = ", imageCredentials);
+export const uploadImage = async (localFilePath) => {
   try {
-    await imageModel.create(imageCredentials);
+    const imageCredentials = await uploadOnCloudinary(localFilePath);
+    // console.log("imageCredentials = ", imageCredentials);
+    imageModel.create(imageCredentials);
+    return imageCredentials;
   } catch (error) {
     throw new Error(error);
   }
@@ -17,7 +19,7 @@ export const deleteImage = async (imageUrl) => {
       secure_url: imageUrl,
     });
 
-    console.log("imageDetails = ", imageDetails);
+    // console.log("imageDetails = ", imageDetails);
     if (imageDetails.public_id) {
       deleteFromCloudinary(imageDetails.public_id);
     }

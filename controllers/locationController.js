@@ -1,53 +1,53 @@
 // import dotenv from 'dotenv';
 // dotenv.config();
-import fs from "fs";
 import slugify from "slugify";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
-import { deleteImage, imageUploadOnDB } from "../utils/image.js";
+import { deleteImage, uploadImage } from "../utils/image.js";
 import { locationModel } from "../models/locationModel.js";
 import { replaceMongoIdInArray } from "../utils/mongoDB.js";
+import { removeLocalFile } from "../utils/fs-utils.js";
 
 export const create = async (req, res) => {
   try {
+    // console.log('req.body = ', req.body);
     // console.log("req.file = ", req.file);
     const { name } = req.body;
-    // console.log('req.body = ', req.body);
 
+    // Validate the name field
     if (!name && !name?.trim().length) {
-      return res.status(400).json({ message: "name is required" });
+      return res.status(400).json({ message: "Name is required" });
     }
 
+    // Check if the location already exists
     const isLocationExists = await locationModel.findOne({
       slug: slugify(name.trim()),
     });
     if (isLocationExists) {
-      return res
-        .status(400)
-        .json({ message: "location with this name already exist" });
-    }
-
-    res.status(201).json({ message: "Location created successfully" });
-
-    if (req?.file?.path) {
-      const logo = await uploadOnCloudinary(req.file.path);
-      imageUploadOnDB({ ...logo });
-      locationModel.create({
-        name,
-        slug: slugify(name),
-        icon: logo.secure_url,
+      return res.status(400).json({
+        message: "Location with this name already exists",
       });
-    } else {
-      locationModel.create({ name, slug: slugify(name.trim()) });
     }
+
+    // Handle image upload if a file is provided
+    let imageUrl = null;
+    if (req?.file?.path) {
+      const image = await uploadImage(req.file.path);
+      imageUrl = image.secure_url;
+    }
+
+    // Create the location
+    await locationModel.create({
+      name: name.trim(),
+      slug: slugify(name.trim()),
+      icon: imageUrl,
+    });
+
+    return res.status(201).json({ message: "Location created successfully" });
   } catch (error) {
-    console.log(error);
+    console.error("Error creating location:", error);
+    return res.status(500).json({ message: "Server error occurred" });
   } finally {
     if (req?.file?.path) {
-      fs.unlink(req.file.path, (error) => {
-        if (error) {
-          console.log("uploadOnCloudinary, fsmodule error = ", error);
-        }
-      });
+      removeLocalFile(req.file.path);
     }
   }
 };
@@ -102,10 +102,10 @@ export const list = async (req, res) => {
       offset,
       count,
     });
-  } catch (err) {
-    console.log("err = ", err);
+  } catch (error) {
+    console.log("error = ", error);
     if (err?.messag) {
-      res.status(500).json(err.message);
+      res.status(500).json(error.message);
     } else {
       res
         .status(500)
@@ -116,16 +116,12 @@ export const list = async (req, res) => {
 
 export const remove = async (req, res) => {
   try {
-    console.log("req.params.id = ", req.params.id);
+    // console.log("req.params.id = ", req.params.id);
     if (/^[0-9a-fA-F]{24}$/.test(req.params.id)) {
       const deletedData = await locationModel.findByIdAndDelete(req.params.id);
 
-      console.log("deletedData = ", deletedData);
+      // console.log("deletedData = ", deletedData);
       if (deletedData) {
-        // imageModel.findByIdAndDelete(req.params.id);
-        // deleteFromCloudinary(deletedData.thumbnail);
-        // deleteFromCloudinary(deletedData.logo);
-
         res.status(200).json({ message: "deleted successfully" });
 
         if (deletedData.icon) {
@@ -137,8 +133,14 @@ export const remove = async (req, res) => {
     } else {
       res.status(400).json({ message: "Provide vaild id" });
     }
-  } catch (err) {
-    console.log(err);
-    return res.status(400).json(err.message);
+  } catch (error) {
+    console.log("error = ", error);
+    if (err?.messag) {
+      res.status(500).json(error.message);
+    } else {
+      res
+        .status(500)
+        .json({ error: "An error occurred while processing your request" });
+    }
   }
 };

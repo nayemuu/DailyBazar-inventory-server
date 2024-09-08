@@ -149,3 +149,66 @@ export const remove = async (req, res) => {
     return res.status(500).json({ message: "Server error occurred" });
   }
 };
+
+export const update = async (req, res) => {
+  const locationId = req.params.id;
+  const { name } = req.body;
+
+  try {
+    // Validate location ID
+    if (!/^[0-9a-fA-F]{24}$/.test(locationId)) {
+      return res.status(400).json({ message: "Invalid location ID" });
+    }
+
+    // Find the existing location by ID
+    const existingLocation = await locationModel.findById(locationId);
+    if (!existingLocation) {
+      return res
+        .status(404)
+        .json({ message: "No location found with the provided ID" });
+    }
+
+    // Update the name if provided
+    if (name && name.trim()) {
+      const isNameTaken = await locationModel.findOne({
+        slug: slugify(name.trim()),
+      });
+
+      if (isNameTaken) {
+        return res
+          .status(400)
+          .json({ message: "Location with this name already exists" });
+      }
+
+      existingLocation.name = name.trim();
+      existingLocation.slug = slugify(name.trim());
+    }
+
+    // Handle image update if a new file is provided
+    if (req?.file?.path) {
+      // Delete the old image if it exists
+      if (existingLocation.icon) {
+        deleteImage(existingLocation.icon);
+      }
+
+      const image = await uploadImage(req.file.path);
+      existingLocation.icon = image.secure_url;
+    }
+
+    // Save the updated location
+    await existingLocation.save();
+
+    return res.status(200).json({
+      message: "Location updated successfully",
+      data: existingLocation,
+    });
+  } catch (error) {
+    console.error("Error updating location:", error);
+    return res.status(500).json({ message: "Server error occurred" });
+  } finally {
+    // Remove the uploaded file from local storage if any
+    if (req?.file?.path) {
+      removeLocalFile(req.file.path);
+    }
+  }
+};

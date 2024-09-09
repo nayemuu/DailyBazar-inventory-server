@@ -153,6 +153,8 @@ export const remove = async (req, res) => {
 export const update = async (req, res) => {
   const locationId = req.params.id;
   const { name } = req.body;
+  // console.log("req.body = ", req.body);
+  // console.log("req.file = ", req.file);
 
   try {
     // Validate location ID
@@ -172,6 +174,7 @@ export const update = async (req, res) => {
     if (name && name.trim()) {
       const isNameTaken = await locationModel.findOne({
         slug: slugify(name.trim()),
+        _id: { $ne: locationId }, // Ensure we are not finding the current location
       });
 
       if (isNameTaken) {
@@ -200,7 +203,6 @@ export const update = async (req, res) => {
 
     return res.status(200).json({
       message: "Location updated successfully",
-      data: existingLocation,
     });
   } catch (error) {
     console.error("Error updating location:", error);

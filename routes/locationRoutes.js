@@ -11,7 +11,7 @@ import { upload } from "../utils/multer.js";
 const Route = express.Router();
 Route.get("/", checkLogin, list);
 Route.post("/", checkLogin, upload.single("icon"), create);
-Route.patch("/:id", upload.single("icon"), update);
-Route.delete("/:id", remove);
+Route.patch("/:id", checkLogin, upload.single("icon"), update);
+Route.delete("/:id", checkLogin, remove);
 
 export default Route;

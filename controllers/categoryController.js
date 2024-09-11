@@ -107,6 +107,7 @@ export const list = async (req, res) => {
     const dataFromMongodb = await categoryModel
       .find(query)
       .select(["name", "icon"])
+      .populate("location", "name")
       .sort({ createdAt: -1 }) // Sort by createdAt in descending order
       .limit(limit)
       .skip(offset)

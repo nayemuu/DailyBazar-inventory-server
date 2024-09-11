@@ -18,6 +18,14 @@ export const create = async (req, res) => {
       return res.status(400).json({ message: "Location ID is required" });
     }
 
+    // Check if the location exists
+    const existingLocation = await locationModel.findById(locationId);
+    if (!existingLocation) {
+      return res.status(400).json({
+        message: "Location does not exist",
+      });
+    }
+
     // Check if the Category already exists
     const existingCategory = await categoryModel.findOne({
       slug: slugify(name.trim()),
@@ -26,14 +34,6 @@ export const create = async (req, res) => {
     if (existingCategory) {
       return res.status(400).json({
         message: "A category with this name already exists",
-      });
-    }
-
-    // Check if the location exists
-    const existingLocation = await locationModel.findById(locationId);
-    if (!existingLocation) {
-      return res.status(400).json({
-        message: "Location does not exist",
       });
     }
 
@@ -104,6 +104,7 @@ export const list = async (req, res) => {
     const count = await categoryModel.countDocuments(query);
 
     // Get the paginated and sorted data
+
     const dataFromMongodb = await categoryModel
       .find(query)
       .select(["name", "icon"])
@@ -112,6 +113,8 @@ export const list = async (req, res) => {
       .limit(limit)
       .skip(offset)
       .lean();
+
+    // console.log("dataFromMongodb = ", dataFromMongodb);
 
     res.status(200).json({
       results: replaceMongoIdInArray(dataFromMongodb),
@@ -150,12 +153,86 @@ export const remove = async (req, res) => {
 
     // If the location has an associated icon, delete it
     if (deletedCategory.icon) {
-      deleteImage(deletedLocation.icon);
+      deleteImage(deletedCategory.icon);
     }
 
     return res.status(200).json({ message: "Category deleted successfully" });
   } catch (error) {
     console.error("Error deleting Category:", error);
     return res.status(500).json({ message: "Server error occurred" });
+  }
+};
+
+export const update = async (req, res) => {
+  const categoryId = req.params.id;
+  const { name, locationId } = req.body;
+  // console.log("req.body = ", req.body);
+  // console.log("req.file = ", req.file);
+
+  try {
+    // Validate category ID
+    if (!/^[0-9a-fA-F]{24}$/.test(categoryId)) {
+      return res.status(400).json({ message: "Invalid category ID" });
+    }
+
+    // Find the existing category by ID
+    const existingCategory = await categoryModel.findById(categoryId);
+    if (!existingCategory) {
+      return res
+        .status(404)
+        .json({ message: "No category found with the provided ID" });
+    }
+
+    // Check if the location exists if provided
+    if (locationId) {
+      const existingLocation = await locationModel.findById(locationId);
+      if (!existingLocation) {
+        return res.status(400).json({ message: "Location does not exist" });
+      }
+      existingCategory.location = locationId;
+    }
+
+    // Update the name if provided
+    if (name && name.trim()) {
+      const isNameTaken = await categoryModel.findOne({
+        slug: slugify(name.trim()),
+        _id: { $ne: categoryId }, // Ensure we are not finding the current category
+      });
+
+      if (isNameTaken) {
+        return res
+          .status(400)
+          .json({ message: "Category with this name already exists" });
+      }
+
+      existingCategory.name = name.trim();
+      existingCategory.slug = slugify(name.trim());
+    }
+
+    // Handle image update if a new file is provided
+    if (req?.file?.path) {
+      // Delete the old image if it exists
+      if (existingCategory.icon) {
+        deleteImage(existingCategory.icon);
+      }
+
+      const image = await uploadImage(req.file.path);
+      existingCategory.icon = image.secure_url;
+    }
+
+    // Save the updated category
+    await existingCategory.save();
+
+    return res.status(200).json({
+      message: "Category updated successfully",
+    });
+  } catch (error) {
+    console.error("Error updating category:", error);
+    return res.status(500).json({ message: "Server error occurred" });
+  } finally {
+    // Remove the uploaded file from local storage if any
+    if (req?.file?.path) {
+      removeLocalFile(req.file.path);
+    }
   }
 };

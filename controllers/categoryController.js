@@ -129,3 +129,33 @@ export const list = async (req, res) => {
     }
   }
 };
+
+export const remove = async (req, res) => {
+  try {
+    const categoryId = req.params.id;
+
+    // Validate location ID
+    if (!/^[0-9a-fA-F]{24}$/.test(categoryId)) {
+      return res.status(400).json({ message: "Invalid Category ID" });
+    }
+
+    // Find and delete the location by ID
+    const deletedCategory = await categoryModel.findByIdAndDelete(categoryId);
+
+    if (!deletedCategory) {
+      return res
+        .status(400)
+        .json({ message: "No category found with the provided ID" });
+    }
+
+    // If the location has an associated icon, delete it
+    if (deletedCategory.icon) {
+      deleteImage(deletedLocation.icon);
+    }
+
+    return res.status(200).json({ message: "Category deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting Category:", error);
+    return res.status(500).json({ message: "Server error occurred" });
+  }
+};

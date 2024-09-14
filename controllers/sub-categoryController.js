@@ -3,37 +3,37 @@ import { deleteImage, uploadImage } from "../utils/image.js";
 import { replaceMongoIdInArray } from "../utils/mongoDB.js";
 import { removeLocalFile } from "../utils/fs-utils.js";
 import { categoryModel } from "../models/categoryModel.js";
-import { locationModel } from "../models/locationModel.js";
+import { subCategoryModel } from "../models/sub-categoryModel.js";
 
 export const create = async (req, res) => {
   try {
-    const { name, locationId } = req.body;
+    const { name, categoryId } = req.body;
 
     // Validate input fields
     if (!name || !name.trim()) {
       return res.status(400).json({ message: "Name is required" });
     }
 
-    if (!locationId) {
-      return res.status(400).json({ message: "Location ID is required" });
+    if (!categoryId) {
+      return res.status(400).json({ message: "Category ID is required" });
     }
 
-    // Check if the location exists
-    const existingLocation = await locationModel.findById(locationId);
-    if (!existingLocation) {
+    // Check if the Category exists
+    const existingCategory = await categoryModel.findById(categoryId);
+    if (!existingCategory) {
       return res.status(400).json({
-        message: "Location does not exist",
+        message: "Category does not exist",
       });
     }
 
     // Check if the Category already exists
-    const existingCategory = await categoryModel.findOne({
+    const existingSubCategory = await subCategoryModel.findOne({
       slug: slugify(name.trim()),
     });
 
-    if (existingCategory) {
+    if (existingSubCategory) {
       return res.status(400).json({
-        message: "A category with this name already exists",
+        message: "A Sub Category with this name already exists",
       });
     }
 
@@ -50,16 +50,18 @@ export const create = async (req, res) => {
     }
 
     // Create the category
-    await categoryModel.create({
+    await subCategoryModel.create({
       name: name.trim(),
       slug: slugify(name.trim()),
       icon: imageUrl,
-      location: locationId,
+      category: categoryId,
     });
 
-    return res.status(201).json({ message: "Category created successfully" });
+    return res
+      .status(201)
+      .json({ message: "Sub Category created successfully" });
   } catch (error) {
-    console.error("Error creating category:", error);
+    console.error("Error creating Sub Category:", error);
     return res.status(500).json({ message: "Server error occurred" });
   } finally {
     // Ensure local file is removed if it exists
@@ -101,14 +103,14 @@ export const list = async (req, res) => {
 
   try {
     // Get the total count of documents
-    const count = await categoryModel.countDocuments(query);
+    const count = await subCategoryModel.countDocuments(query);
 
     // Get the paginated and sorted data
 
-    const dataFromMongodb = await categoryModel
+    const dataFromMongodb = await subCategoryModel
       .find(query)
       .select(["name", "icon"])
-      .populate("location", "name")
+      .populate("category", "name")
       .sort({ createdAt: -1 }) // Sort by createdAt in descending order
       .limit(limit)
       .skip(offset)
@@ -127,7 +129,7 @@ export const list = async (req, res) => {
     if (error?.messag) {
       res.status(500).json(error.message);
     } else {
-      console.error("Error listing locations:", error);
+      console.error("Error listing Sub Category:", error);
       return res.status(500).json({ message: "Server error occurred" });
     }
   }
@@ -135,30 +137,34 @@ export const list = async (req, res) => {
 
 export const remove = async (req, res) => {
   try {
-    const categoryId = req.params.id;
+    const subCategoryId = req.params.id;
 
     // Validate location ID
-    if (!/^[0-9a-fA-F]{24}$/.test(categoryId)) {
-      return res.status(400).json({ message: "Invalid Category ID" });
+    if (!/^[0-9a-fA-F]{24}$/.test(subCategoryId)) {
+      return res.status(400).json({ message: "Invalid Sub Category ID" });
     }
 
     // Find and delete the location by ID
-    const deletedCategory = await categoryModel.findByIdAndDelete(categoryId);
+    const deletedSubCategory = await subCategoryModel.findByIdAndDelete(
+      subCategoryId
+    );
 
-    if (!deletedCategory) {
+    if (!deletedSubCategory) {
       return res
         .status(400)
-        .json({ message: "No category found with the provided ID" });
+        .json({ message: "No Sub Category found with the provided ID" });
     }
 
     // If the location has an associated icon, delete it
-    if (deletedCategory.icon) {
-      deleteImage(deletedCategory.icon);
+    if (deletedSubCategory.icon) {
+      deleteImage(deletedSubCategory.icon);
     }
 
-    return res.status(200).json({ message: "Category deleted successfully" });
+    return res
+      .status(200)
+      .json({ message: "Sub Category  deleted successfully" });
   } catch (error) {
-    console.error("Error deleting Category:", error);
+    console.error("Error deleting Sub Category :", error);
     return res.status(500).json({ message: "Server error occurred" });
   }
 };

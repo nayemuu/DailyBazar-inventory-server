@@ -13,6 +13,7 @@ import {
   connectToDatabase,
 } from "./utils/database-utils.js";
 import { categoryRoutes } from "./routes/categoryRoutes.js";
+import { subCategoryRoutes } from "./routes/sub-categoryRoutes.js";
 
 dotenv.config();
 const app = express();
@@ -35,6 +36,7 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/location", locationRoutes);
 app.use("/api/category", categoryRoutes);
+app.use("/api/sub-category", subCategoryRoutes);
 
 // Error handling middleware
 function errorHandler(err, req, res, next) {

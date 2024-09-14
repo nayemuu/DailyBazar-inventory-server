@@ -111,7 +111,7 @@ export const list = async (req, res) => {
     });
   } catch (error) {
     console.log("error = ", error);
-    if (err?.messag) {
+    if (error?.messag) {
       res.status(500).json(error.message);
     } else {
       console.error("Error listing locations:", error);

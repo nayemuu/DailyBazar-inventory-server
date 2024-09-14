@@ -6,18 +6,18 @@ import { categoryModel } from "../models/categoryModel.js";
 import { subCategoryModel } from "../models/sub-categoryModel.js";
 
 export const create = async (req, res) => {
+  const { name, categoryId } = req.body;
+
+  // Validate input fields
+  if (!name || !name.trim()) {
+    return res.status(400).json({ message: "Name is required" });
+  }
+
+  if (!categoryId) {
+    return res.status(400).json({ message: "Category ID is required" });
+  }
+
   try {
-    const { name, categoryId } = req.body;
-
-    // Validate input fields
-    if (!name || !name.trim()) {
-      return res.status(400).json({ message: "Name is required" });
-    }
-
-    if (!categoryId) {
-      return res.status(400).json({ message: "Category ID is required" });
-    }
-
     // Check if the Category exists
     const existingCategory = await categoryModel.findById(categoryId);
     if (!existingCategory) {
@@ -170,74 +170,81 @@ export const remove = async (req, res) => {
 };
 
 export const update = async (req, res) => {
-  const categoryId = req.params.id;
-  const { name, locationId } = req.body;
-  // console.log("req.body = ", req.body);
-  // console.log("req.file = ", req.file);
+  const subCategoryId = req.params.id;
+  const { name, categoryId } = req.body;
+
+  console.log("subCategoryId = ", subCategoryId);
+
+  // Validate input fields
+  if (!name && !categoryId && !req.file) {
+    return res.status(400).json({ message: "No fields to update" });
+  }
 
   try {
-    // Validate category ID
-    if (!/^[0-9a-fA-F]{24}$/.test(categoryId)) {
-      return res.status(400).json({ message: "Invalid category ID" });
+    // Validate sub-category ID
+    if (!/^[0-9a-fA-F]{24}$/.test(subCategoryId)) {
+      return res.status(400).json({ message: "Invalid Sub Category ID" });
     }
 
-    // Find the existing category by ID
-    const existingCategory = await categoryModel.findById(categoryId);
-    if (!existingCategory) {
-      return res
-        .status(404)
-        .json({ message: "No category found with the provided ID" });
+    // Find the existing sub-category
+    const subCategory = await subCategoryModel.findById(subCategoryId);
+    if (!subCategory) {
+      return res.status(404).json({ message: "Sub Category not found" });
     }
 
-    // Check if the location exists if provided
-    if (locationId) {
-      const existingLocation = await locationModel.findById(locationId);
-      if (!existingLocation) {
-        return res.status(400).json({ message: "Location does not exist" });
+    // Check if the new category exists
+    if (categoryId) {
+      const existingCategory = await categoryModel.findById(categoryId);
+      if (!existingCategory) {
+        return res.status(400).json({ message: "Category does not exist" });
       }
-      existingCategory.location = locationId;
     }
 
-    // Update the name if provided
-    if (name && name.trim()) {
-      const isNameTaken = await categoryModel.findOne({
+    // Check for a new name and ensure it's unique
+    if (name) {
+      const existingSubCategory = await subCategoryModel.findOne({
         slug: slugify(name.trim()),
-        _id: { $ne: categoryId }, // Ensure we are not finding the current category
+        _id: { $ne: subCategoryId },
       });
 
-      if (isNameTaken) {
+      if (existingSubCategory) {
         return res
           .status(400)
-          .json({ message: "Category with this name already exists" });
+          .json({ message: "A Sub Category with this name already exists" });
       }
-
-      existingCategory.name = name.trim();
-      existingCategory.slug = slugify(name.trim());
     }
 
-    // Handle image update if a new file is provided
-    if (req?.file?.path) {
-      // Delete the old image if it exists
-      if (existingCategory.icon) {
-        deleteImage(existingCategory.icon);
-      }
+    let imageUrl = null;
 
-      const image = await uploadImage(req.file.path);
-      existingCategory.icon = image.secure_url;
+    // Handle image upload if a file is provided
+    if (req.file?.path) {
+      try {
+        const image = await uploadImage(req.file.path);
+        imageUrl = image.secure_url;
+      } catch (uploadError) {
+        console.error("Error uploading image:", uploadError);
+        return res.status(500).json({ message: "Failed to upload image" });
+      }
     }
 
-    // Save the updated category
-    await existingCategory.save();
-
-    return res.status(200).json({
-      message: "Category updated successfully",
+    // Update the sub-category
+    await subCategoryModel.findByIdAndUpdate(subCategoryId, {
+      name: name ? name.trim() : subCategory.name,
+      slug: name ? slugify(name.trim()) : subCategory.slug,
+      icon: imageUrl || subCategory.icon,
+      category: categoryId || subCategory.category,
     });
+
+    // Successfully updated
+    return res
+      .status(200)
+      .json({ message: "Sub Category updated successfully" });
   } catch (error) {
-    console.error("Error updating category:", error);
+    console.error("Error updating Sub Category:", error);
     return res.status(500).json({ message: "Server error occurred" });
   } finally {
-    // Remove the uploaded file from local storage if any
-    if (req?.file?.path) {
+    // Ensure local file is removed if it exists
+    if (req.file?.path) {
       removeLocalFile(req.file.path);
     }
   }

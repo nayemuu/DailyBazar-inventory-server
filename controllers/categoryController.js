@@ -18,6 +18,10 @@ export const create = async (req, res) => {
       return res.status(400).json({ message: "Location ID is required" });
     }
 
+    if (!/^[0-9a-fA-F]{24}$/.test(locationId)) {
+      return res.status(400).json({ message: "Invalid Location ID" });
+    }
+
     // Check if the location exists
     const existingLocation = await locationModel.findById(locationId);
     if (!existingLocation) {

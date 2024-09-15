@@ -17,8 +17,13 @@ export const create = async (req, res) => {
     return res.status(400).json({ message: "Category ID is required" });
   }
 
+  if (!/^[0-9a-fA-F]{24}$/.test(categoryId)) {
+    return res.status(400).json({ message: "Invalid Category ID" });
+  }
+
   try {
     // Check if the Category exists
+
     const existingCategory = await categoryModel.findById(categoryId);
     if (!existingCategory) {
       return res.status(400).json({
@@ -172,8 +177,6 @@ export const remove = async (req, res) => {
 export const update = async (req, res) => {
   const subCategoryId = req.params.id;
   const { name, categoryId } = req.body;
-
-  console.log("subCategoryId = ", subCategoryId);
 
   // Validate input fields
   if (!name && !categoryId && !req.file) {

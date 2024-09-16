@@ -153,15 +153,18 @@ export const remove = async (req, res) => {
 export const update = async (req, res) => {
   const locationId = req.params.id;
   const { name } = req.body;
-  // console.log("req.body = ", req.body);
-  // console.log("req.file = ", req.file);
+
+  // Validate input fields
+  if (!name && !req.file) {
+    return res.status(400).json({ message: "No fields to update" });
+  }
+
+  // Validate location ID
+  if (!/^[0-9a-fA-F]{24}$/.test(locationId)) {
+    return res.status(400).json({ message: "Invalid location ID" });
+  }
 
   try {
-    // Validate location ID
-    if (!/^[0-9a-fA-F]{24}$/.test(locationId)) {
-      return res.status(400).json({ message: "Invalid location ID" });
-    }
-
     // Find the existing location by ID
     const existingLocation = await locationModel.findById(locationId);
     if (!existingLocation) {
@@ -170,46 +173,39 @@ export const update = async (req, res) => {
         .json({ message: "No location found with the provided ID" });
     }
 
-    // Update the name if provided
-    if (name && name.trim()) {
-      const isNameTaken = await locationModel.findOne({
-        slug: slugify(name.trim()),
-        _id: { $ne: locationId }, // Ensure we are not finding the current location
-      });
+    let imageUrl = null;
 
-      if (isNameTaken) {
-        return res
-          .status(400)
-          .json({ message: "Location with this name already exists" });
-      }
-
-      existingLocation.name = name.trim();
-      existingLocation.slug = slugify(name.trim());
-    }
-
-    // Handle image update if a new file is provided
-    if (req?.file?.path) {
+    // Handle image upload if a file is provided
+    if (req.file?.path) {
       // Delete the old image if it exists
       if (existingLocation.icon) {
         deleteImage(existingLocation.icon);
       }
 
-      const image = await uploadImage(req.file.path);
-      existingLocation.icon = image.secure_url;
+      try {
+        const image = await uploadImage(req.file.path);
+        imageUrl = image.secure_url;
+      } catch (uploadError) {
+        console.error("Error uploading image:", uploadError);
+        return res.status(500).json({ message: "Failed to upload image" });
+      }
     }
 
-    // Save the updated location
-    await existingLocation.save();
-
-    return res.status(200).json({
-      message: "Location updated successfully",
+    // Update the location document
+    await locationModel.findByIdAndUpdate(locationId, {
+      name: name ? name.trim() : existingLocation.name,
+      slug: name ? slugify(name.trim()) : existingLocation.slug,
+      icon: imageUrl || existingLocation.icon,
     });
+
+    // Successfully updated
+    return res.status(200).json({ message: "Location updated successfully" });
   } catch (error) {
     console.error("Error updating location:", error);
     return res.status(500).json({ message: "Server error occurred" });
   } finally {
-    // Remove the uploaded file from local storage if any
-    if (req?.file?.path) {
+    // Ensure local file is removed if it exists
+    if (req.file?.path) {
       removeLocalFile(req.file.path);
     }
   }

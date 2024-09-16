@@ -183,12 +183,12 @@ export const update = async (req, res) => {
     return res.status(400).json({ message: "No fields to update" });
   }
 
-  try {
-    // Validate sub-category ID
-    if (!/^[0-9a-fA-F]{24}$/.test(subCategoryId)) {
-      return res.status(400).json({ message: "Invalid Sub Category ID" });
-    }
+  // Validate sub-category ID
+  if (!/^[0-9a-fA-F]{24}$/.test(subCategoryId)) {
+    return res.status(400).json({ message: "Invalid Sub Category ID" });
+  }
 
+  try {
     // Find the existing sub-category
     const subCategory = await subCategoryModel.findById(subCategoryId);
     if (!subCategory) {

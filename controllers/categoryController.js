@@ -170,72 +170,80 @@ export const remove = async (req, res) => {
 export const update = async (req, res) => {
   const categoryId = req.params.id;
   const { name, locationId } = req.body;
-  // console.log("req.body = ", req.body);
-  // console.log("req.file = ", req.file);
+
+  // Validate input fields
+  if (!name && !locationId && !req.file) {
+    return res.status(400).json({ message: "No fields to update" });
+  }
+
+  // Validate category ID
+  if (!/^[0-9a-fA-F]{24}$/.test(categoryId)) {
+    return res.status(400).json({ message: "Invalid Category ID" });
+  }
 
   try {
-    // Validate category ID
-    if (!/^[0-9a-fA-F]{24}$/.test(categoryId)) {
-      return res.status(400).json({ message: "Invalid category ID" });
+    // Find the existing category
+    const category = await categoryModel.findById(categoryId);
+    if (!category) {
+      return res.status(404).json({ message: "Category not found" });
     }
 
-    // Find the existing category by ID
-    const existingCategory = await categoryModel.findById(categoryId);
-    if (!existingCategory) {
-      return res
-        .status(404)
-        .json({ message: "No category found with the provided ID" });
-    }
-
-    // Check if the location exists if provided
+    // Check if the new location exists
     if (locationId) {
       const existingLocation = await locationModel.findById(locationId);
       if (!existingLocation) {
         return res.status(400).json({ message: "Location does not exist" });
       }
-      existingCategory.location = locationId;
     }
 
-    // Update the name if provided
-    if (name && name.trim()) {
-      const isNameTaken = await categoryModel.findOne({
+    // Check for a new name and ensure it's unique
+    if (name) {
+      const existingCategory = await categoryModel.findOne({
         slug: slugify(name.trim()),
-        _id: { $ne: categoryId }, // Ensure we are not finding the current category
+        _id: { $ne: categoryId },
       });
 
-      if (isNameTaken) {
+      if (existingCategory) {
         return res
           .status(400)
-          .json({ message: "Category with this name already exists" });
+          .json({ message: "A Category with this name already exists" });
       }
-
-      existingCategory.name = name.trim();
-      existingCategory.slug = slugify(name.trim());
     }
 
-    // Handle image update if a new file is provided
-    if (req?.file?.path) {
+    let imageUrl = null;
+
+    // Handle image upload if a file is provided
+    if (req.file?.path) {
       // Delete the old image if it exists
-      if (existingCategory.icon) {
-        deleteImage(existingCategory.icon);
+      if (category.icon) {
+        deleteImage(category.icon);
       }
 
-      const image = await uploadImage(req.file.path);
-      existingCategory.icon = image.secure_url;
+      try {
+        const image = await uploadImage(req.file.path);
+        imageUrl = image.secure_url;
+      } catch (uploadError) {
+        console.error("Error uploading image:", uploadError);
+        return res.status(500).json({ message: "Failed to upload image" });
+      }
     }
 
-    // Save the updated category
-    await existingCategory.save();
-
-    return res.status(200).json({
-      message: "Category updated successfully",
+    // Update the category
+    await categoryModel.findByIdAndUpdate(categoryId, {
+      name: name ? name.trim() : category.name,
+      slug: name ? slugify(name.trim()) : category.slug,
+      icon: imageUrl || category.icon,
+      location: locationId || category.location,
     });
+
+    // Successfully updated
+    return res.status(200).json({ message: "Category updated successfully" });
   } catch (error) {
-    console.error("Error updating category:", error);
+    console.error("Error updating Category:", error);
     return res.status(500).json({ message: "Server error occurred" });
   } finally {
-    // Remove the uploaded file from local storage if any
-    if (req?.file?.path) {
+    // Ensure local file is removed if it exists
+    if (req.file?.path) {
       removeLocalFile(req.file.path);
     }
   }

@@ -4,6 +4,7 @@ import { replaceMongoIdInArray } from "../utils/mongoDB.js";
 import { removeLocalFile } from "../utils/fs-utils.js";
 import { categoryModel } from "../models/categoryModel.js";
 import { locationModel } from "../models/locationModel.js";
+import { subCategoryModel } from "../models/sub-categoryModel.js";
 
 export const create = async (req, res) => {
   try {
@@ -154,6 +155,21 @@ export const remove = async (req, res) => {
         .status(400)
         .json({ message: "No category found with the provided ID" });
     }
+
+    // Find related subcategories
+    const deletedSubCategories = await subCategoryModel.find({
+      category: categoryId,
+    });
+
+    // Delete icons for the found subcategories
+    deletedSubCategories.forEach((subCat) => {
+      if (subCat.icon) {
+        deleteImage(subCat.icon);
+      }
+    });
+
+    // Now delete the subcategories
+    await subCategoryModel.deleteMany({ category: categoryId });
 
     // If the location has an associated icon, delete it
     if (deletedCategory.icon) {

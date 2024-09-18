@@ -5,6 +5,8 @@ import { deleteImage, uploadImage } from "../utils/image.js";
 import { locationModel } from "../models/locationModel.js";
 import { replaceMongoIdInArray } from "../utils/mongoDB.js";
 import { removeLocalFile } from "../utils/fs-utils.js";
+import { categoryModel } from "../models/categoryModel.js";
+import { subCategoryModel } from "../models/sub-categoryModel.js";
 
 export const create = async (req, res) => {
   try {
@@ -137,6 +139,37 @@ export const remove = async (req, res) => {
         .status(400)
         .json({ message: "No location found with the provided ID" });
     }
+
+    // Find and delete related categories
+    const deletedCategories = await categoryModel.find({
+      location: locationId,
+    });
+
+    // Delete icons for the found categories
+    deletedCategories.forEach((cat) => {
+      if (cat.icon) {
+        deleteImage(cat.icon);
+      }
+    });
+
+    // Now delete the categories
+    await categoryModel.deleteMany({ location: locationId });
+
+    // Find related subcategories for the deleted categories
+    const categoryIds = deletedCategories.map((cat) => cat._id);
+    const deletedSubCategories = await subCategoryModel.find({
+      category: { $in: categoryIds },
+    });
+
+    // Delete icons for the found subcategories
+    deletedSubCategories.forEach((subCat) => {
+      if (subCat.icon) {
+        deleteImage(subCat.icon);
+      }
+    });
+
+    // Finally, delete the subcategories
+    await subCategoryModel.deleteMany({ category: { $in: categoryIds } });
 
     // If the location has an associated icon, delete it
     if (deletedLocation.icon) {

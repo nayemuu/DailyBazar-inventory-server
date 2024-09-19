@@ -17,7 +17,7 @@ const supplierSchema = new Schema(
       maxLength: 500,
     },
     category_of_supplier: {
-      default: null,
+      required: true,
       type: String,
       trim: true,
       maxLength: 200,
@@ -41,13 +41,13 @@ const supplierSchema = new Schema(
       maxLength: 200,
     },
     supplier_product_category: {
-      default: null,
+      required: true,
       type: String,
       trim: true,
       maxLength: 100,
     },
     status: {
-      default: null,
+      required: true,
       type: String,
       trim: true,
       maxLength: 50,

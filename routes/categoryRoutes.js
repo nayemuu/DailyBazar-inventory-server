@@ -1,5 +1,5 @@
 import express from "express";
-import { checkLogin } from "../middlewares/common/checkLogin.js";
+import { requiredLogin } from "../middlewares/common/requiredLogin.js";
 import {
   list,
   create,
@@ -9,9 +9,9 @@ import {
 import { upload } from "../utils/multer.js";
 
 const Route = express.Router();
-Route.get("/", checkLogin, list);
-Route.post("/", checkLogin, upload.single("icon"), create);
-Route.patch("/:id", checkLogin, upload.single("icon"), update);
-Route.delete("/:id", checkLogin, remove);
+Route.get("/", requiredLogin, list);
+Route.post("/", requiredLogin, upload.single("icon"), create);
+Route.patch("/:id", requiredLogin, upload.single("icon"), update);
+Route.delete("/:id", requiredLogin, remove);
 
 export const categoryRoutes = Route;

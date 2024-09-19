@@ -5,13 +5,12 @@ import {
   list,
   update,
   remove,
-} from "../controllers/locationController.js";
-import { upload } from "../utils/multer.js";
+} from "../controllers/supplierController.js";
 
 const Route = express.Router();
 Route.get("/", requiredLogin, list);
-Route.post("/", requiredLogin, upload.single("icon"), create);
-Route.patch("/:id", requiredLogin, upload.single("icon"), update);
+Route.post("/", requiredLogin, create);
+Route.patch("/:id", requiredLogin, update);
 Route.delete("/:id", requiredLogin, remove);
 
-export default Route;
+export const supplierRoute = Route;

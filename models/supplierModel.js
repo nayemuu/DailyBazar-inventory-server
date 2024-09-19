@@ -10,6 +10,11 @@ const supplierSchema = new Schema(
       maxLength: 300,
       unique: true,
     },
+    slug: {
+      type: String,
+      unique: true,
+      lowercase: true,
+    }, // supplier_name
     supplier_address: {
       default: null,
       type: String,

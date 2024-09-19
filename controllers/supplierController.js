@@ -94,14 +94,6 @@ export const list = async (req, res) => {
     const count = await supplierModel.countDocuments(query);
     const suppliers = await supplierModel
       .find(query)
-      .select([
-        "supplier_name",
-        "supplier_address",
-        "contact_number",
-        "email_address",
-        "contact_person",
-        "status",
-      ])
       .sort({ createdAt: -1 })
       .limit(limit)
       .skip(offset)

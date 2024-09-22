@@ -111,6 +111,27 @@ export const list = async (req, res) => {
   }
 };
 
+export const singleData = async (req, res) => {
+  const supplierId = req.params.id;
+  if (!/^[0-9a-fA-F]{24}$/.test(supplierId)) {
+    return res.status(400).json({ message: "Invalid supplier ID" });
+  }
+
+  try {
+    let data = await supplierModel.findById(supplierId);
+    console.log("data = ", data);
+    if (data) {
+      return res.status(200).json({ data: data });
+    }
+    return res
+      .status(400)
+      .json({ message: "No supplier found with the provided ID" });
+  } catch (error) {
+    console.error("Error getting single supplier data:", error);
+    return res.status(500).json({ message: "Server error occurred" });
+  }
+};
+
 export const remove = async (req, res) => {
   const supplierId = req.params.id;
 

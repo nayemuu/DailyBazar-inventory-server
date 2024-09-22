@@ -1,6 +1,9 @@
 import slugify from "slugify";
 import { supplierModel } from "../models/supplierModel.js";
-import { replaceMongoIdInArray } from "../utils/mongoDB.js";
+import {
+  replaceMongoIdInArray,
+  replaceMongoIdInObject,
+} from "../utils/mongoDB.js";
 
 export const create = async (req, res) => {
   const {
@@ -118,10 +121,10 @@ export const singleData = async (req, res) => {
   }
 
   try {
-    let data = await supplierModel.findById(supplierId);
-    console.log("data = ", data);
+    let data = await supplierModel.findById(supplierId).lean();
+    // console.log("data = ", data);
     if (data) {
-      return res.status(200).json({ data: data });
+      return res.status(200).json(replaceMongoIdInObject(data));
     }
     return res
       .status(400)

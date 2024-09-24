@@ -15,6 +15,7 @@ import {
 import { categoryRoutes } from "./routes/categoryRoutes.js";
 import { subCategoryRoutes } from "./routes/sub-categoryRoutes.js";
 import { supplierRoute } from "./routes/supplierRoutes.js";
+import { genericRoutes } from "./routes/genericRoutes.js";
 
 dotenv.config();
 const app = express();
@@ -39,6 +40,7 @@ app.use("/api/location", locationRoutes);
 app.use("/api/category", categoryRoutes);
 app.use("/api/sub-category", subCategoryRoutes);
 app.use("/api/supplier", supplierRoute);
+app.use("/api/generic", genericRoutes);
 
 // Error handling middleware
 function errorHandler(err, req, res, next) {

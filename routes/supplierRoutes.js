@@ -1,5 +1,5 @@
 import express from "express";
-import { requiredLogin } from "../middlewares/common/requiredLogin.js";
+import { requiredLogin } from "../middlewares/common/authorization-middleware.js";
 import {
   create,
   list,

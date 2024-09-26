@@ -59,7 +59,7 @@ export const create = async (req, res) => {
       name: name.trim(),
       slug: slugify(name.trim()),
       icon: imageUrl,
-      category_id: categoryId,
+      category: categoryId,
     });
 
     return res
@@ -115,7 +115,7 @@ export const list = async (req, res) => {
     const dataFromMongodb = await subCategoryModel
       .find(query)
       .select(["name", "icon"])
-      .populate("category_id", "name")
+      .populate("category", "name")
       .sort({ createdAt: -1 }) // Sort by createdAt in descending order
       .limit(limit)
       .skip(offset)
@@ -221,6 +221,9 @@ export const update = async (req, res) => {
 
     // Handle image upload if a file is provided
     if (req.file?.path) {
+      if (subCategory.icon) {
+        deleteImage(subCategory.icon);
+      }
       try {
         const image = await uploadImage(req.file.path);
         imageUrl = image.secure_url;

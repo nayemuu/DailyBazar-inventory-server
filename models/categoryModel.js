@@ -19,7 +19,7 @@ const categorySchema = new Schema(
       type: String,
       default: null,
     },
-    location_id: {
+    location: {
       type: mongoose.Types.ObjectId,
       ref: "Location", // This Location is reffering your Location model name which you passed in mongoose.model() method
       required: true,

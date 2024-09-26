@@ -59,7 +59,7 @@ export const create = async (req, res) => {
       name: name.trim(),
       slug: slugify(name.trim()),
       icon: imageUrl,
-      location_id: locationId,
+      location: locationId,
     });
 
     return res.status(201).json({ message: "Category created successfully" });
@@ -113,7 +113,7 @@ export const list = async (req, res) => {
     const dataFromMongodb = await categoryModel
       .find(query)
       .select(["name", "icon"])
-      .populate("location_id", "name")
+      .populate("location", "name")
       .sort({ createdAt: -1 }) // Sort by createdAt in descending order
       .limit(limit)
       .skip(offset)

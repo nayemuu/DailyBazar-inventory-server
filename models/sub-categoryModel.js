@@ -19,7 +19,7 @@ const subCategorySchema = new Schema(
       type: String,
       default: null,
     },
-    category_id: {
+    category: {
       type: mongoose.Types.ObjectId,
       ref: "Category", // This Category is reffering your Category model name which you passed in mongoose.model() method
       required: true,

@@ -59,7 +59,7 @@ export const create = async (req, res) => {
       name: name.trim(),
       slug: slugify(name.trim()),
       icon: imageUrl,
-      category: categoryId,
+      category_id: categoryId,
     });
 
     return res
@@ -115,7 +115,7 @@ export const list = async (req, res) => {
     const dataFromMongodb = await subCategoryModel
       .find(query)
       .select(["name", "icon"])
-      .populate("category", "name")
+      .populate("category_id", "name")
       .sort({ createdAt: -1 }) // Sort by createdAt in descending order
       .limit(limit)
       .skip(offset)

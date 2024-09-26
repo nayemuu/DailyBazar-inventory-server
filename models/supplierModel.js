@@ -22,10 +22,9 @@ const supplierSchema = new Schema(
       maxLength: 500,
     },
     category_of_supplier: {
-      required: true,
       type: String,
-      trim: true,
-      maxLength: 200,
+      default: "Local",
+      enum: ["Local", "Foreign"],
     },
     contact_number: {
       default: null,
@@ -46,16 +45,14 @@ const supplierSchema = new Schema(
       maxLength: 200,
     },
     supplier_product_category: {
-      required: true,
       type: String,
-      trim: true,
-      maxLength: 100,
+      default: "Other",
+      enum: ["Pharmacy", "Other"],
     },
     status: {
-      required: true,
       type: String,
-      trim: true,
-      maxLength: 50,
+      default: "In Active",
+      enum: ["Active", "In Active"],
     },
   },
   { timestamps: true }
